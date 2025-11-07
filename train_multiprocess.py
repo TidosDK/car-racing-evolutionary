@@ -75,7 +75,7 @@ def train_or_resume(config_path: str, generations: int, checkpoint: str | None =
 
 	pop.add_reporter(StdOutReporter(True))
 	stats = StatisticsReporter(); pop.add_reporter(stats)
-	pop.add_reporter(SavePerGenerationReporter())
+	pop.add_reporter(SavePerGenerationReporter(MAX_STEPS=MAX_STEPS))
 	os.makedirs("chk", exist_ok=True)
 	pop.add_reporter(Checkpointer(10, filename_prefix="chk/car_neat-"))
 

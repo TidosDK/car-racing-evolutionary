@@ -34,16 +34,14 @@ class SavePerGenerationReporter(BaseReporter):
 	- Champion of each generation (best driver).
 	- Best fitness, mean fitness, and worst fitness of each generation.
     """
-	def __init__(self,
-				 csv_path: str = "fitness_history.csv",
-				 champ_dir: str = "champions"):
+	def __init__(self, csv_path: str = "fitness_history.csv", champ_dir: str = "champions", MAX_STEPS: int = 1000):
 		self.csv_path  = pathlib.Path(csv_path)
 		self.champ_dir = pathlib.Path(champ_dir)
 		self.champ_dir.mkdir(parents=True, exist_ok=True)
 
 		if not self.csv_path.exists():
 			with self.csv_path.open("w", newline="") as f:
-				csv.writer(f).writerow(["generation", "best_fitness", "mean_fitness", "worst_fitness"])
+				csv.writer(f).writerow(["generation", "best_fitness", "mean_fitness", "worst_fitness", "max_steps"])
 		self._gen = 0
 
 	def start_generation(self, generation):
