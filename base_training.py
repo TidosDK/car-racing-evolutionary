@@ -38,6 +38,7 @@ class SavePerGenerationReporter(BaseReporter):
 		self.csv_path  = pathlib.Path(csv_path)
 		self.champ_dir = pathlib.Path(champ_dir)
 		self.champ_dir.mkdir(parents=True, exist_ok=True)
+		self.MAX_STEPS = MAX_STEPS
 
 		if not self.csv_path.exists():
 			with self.csv_path.open("w", newline="") as f:
@@ -65,8 +66,7 @@ class SavePerGenerationReporter(BaseReporter):
 
 		best, worst, mean = max(vals), min(vals), statistics.fmean(vals)
 		with self.csv_path.open("a", newline="") as f:
-			csv.writer(f).writerow([gen, best, mean, worst,
-									len(species_set.species)])
+			csv.writer(f).writerow([gen, best, mean, worst, self.MAX_STEPS])
 
 		best_genome = max((g for g in genomes if g.fitness is not None),
 						  key=lambda g: g.fitness)
