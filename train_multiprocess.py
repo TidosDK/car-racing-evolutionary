@@ -40,7 +40,7 @@ class neat_algorithm:
 
 
 	def increase_max_steps(self):
-		print("MAX STEPS BEFORE:", self.max_steps)
+		print("Max steps:", self.max_steps)
 		gen_num = self.reporter.get_gen()
 
 		if gen_num % self.INCREASE_MAX_STEP_EVERY_X_GENERATION == 0 and self.last_increment >= (gen_num - self.INCREASE_MAX_STEP_EVERY_X_GENERATION):
@@ -48,7 +48,6 @@ class neat_algorithm:
 			self.reporter.set_max_steps(self.max_steps)
 			self.shared_max_steps = self.max_steps
 			self.last_increment = gen_num
-		print("MAX STEPS AFTER:", self.max_steps)
 
 
 	def eval_genome(self, genome, config):
