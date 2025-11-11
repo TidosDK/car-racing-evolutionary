@@ -1,28 +1,11 @@
-### Install
+# Car Racing Evolutionary Algorithm
 
-Run the following:
+## Start training
 
-```sh
-python3 -m venv venv
-source venv/bin/activate
-
-sudo apt update
-sudo apt install -y libgl1 -y
-sudo apt install -y swig build-essential python3-dev -y
-
-pip install -r requirements.txt
-```
-
-### Run the script
-
-For single processing:
+To start the training, you can simply run the `start_training.sh` script. It will setup the environment and start the training.
 
 ```sh
-python3 train.py
+source ./start_training.sh
 ```
 
-For multi-processing:
-
-```sh
-python3 train_multiprocess.py
-```
+To modify how high the population is for each generation, look in the `car_neat.cfg` file. Here you can change the `pop_size` variable to what population you will like. The Python script uses multiprocessing, so each CPU core will run a generation.
