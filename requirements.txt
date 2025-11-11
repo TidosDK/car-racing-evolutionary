@@ -1,7 +1,7 @@
 gymnasium[box2d]
 opencv-python
 swig
-neat-python
+neat-python==0.92.0
 numpy
 pandas
 matplotlib
