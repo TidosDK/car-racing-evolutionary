@@ -34,11 +34,11 @@ class SavePerGenerationReporter(BaseReporter):
 	- Champion of each generation (best driver).
 	- Best fitness, mean fitness, and worst fitness of each generation.
     """
-	def __init__(self, csv_path: str = "fitness_history.csv", champ_dir: str = "champions", MAX_STEPS: int = 1000):
+	def __init__(self, csv_path: str = "fitness_history.csv", champ_dir: str = "champions", max_steps: int = 1000):
 		self.csv_path  = pathlib.Path(csv_path)
 		self.champ_dir = pathlib.Path(champ_dir)
 		self.champ_dir.mkdir(parents=True, exist_ok=True)
-		self.MAX_STEPS = MAX_STEPS
+		self.max_steps = max_steps
 
 		if not self.csv_path.exists():
 			with self.csv_path.open("w", newline="") as f:
@@ -51,6 +51,21 @@ class SavePerGenerationReporter(BaseReporter):
 		Called by the implemented AI
 		"""
 		self._gen = generation
+
+		if hasattr(self, "algorithm") and hasattr(self.algorithm, "increase_max_steps"):
+			self.algorithm.increase_max_steps()
+
+
+	def set_max_steps(self, max_steps):
+		"""
+		Method for changing the max steps value
+		"""
+		self.max_steps = max_steps
+
+
+	def get_gen(self) -> int:
+		return self._gen
+
 
 	def end_generation(self, config, population, species_set):
 		"""
@@ -66,7 +81,7 @@ class SavePerGenerationReporter(BaseReporter):
 
 		best, worst, mean = max(vals), min(vals), statistics.fmean(vals)
 		with self.csv_path.open("a", newline="") as f:
-			csv.writer(f).writerow([gen, best, mean, worst, self.MAX_STEPS])
+			csv.writer(f).writerow([gen, best, mean, worst, self.max_steps])
 
 		best_genome = max((g for g in genomes if g.fitness is not None),
 						  key=lambda g: g.fitness)
