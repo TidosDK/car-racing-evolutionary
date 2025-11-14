@@ -15,7 +15,7 @@ class TinyGray(gym.ObservationWrapper):
 	The Observation Wrapper for converting observations into Gray scaled
 	smaller images for the AI.
 	"""
-	def __init__(self, env, size=(11, 11)):
+	def __init__(self, env, size=(32, 32)):
 		super().__init__(env)
 		self.size = size
 		self.observation_space = gym.spaces.Box(
