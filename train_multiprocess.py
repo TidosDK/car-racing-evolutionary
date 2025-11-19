@@ -23,7 +23,7 @@ class neat_algorithm:
 
 
 	def __init__(self, shared_max_steps=None):
-		self.max_steps = 0
+		self.max_steps = 250
 
 		if shared_max_steps is None:
 			self.shared_max_steps = self.max_steps

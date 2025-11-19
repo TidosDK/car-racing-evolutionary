@@ -22,6 +22,7 @@ class TinyGray(gym.ObservationWrapper):
 			0.0, 1.0, shape=(size[0] * size[1],), dtype=np.float32
 		)
 
+
 	def observation(self, obs):
 		frame = cv2.cvtColor(obs[:-12], cv2.COLOR_RGB2GRAY)
 		frame = cv2.resize(frame, self.size, interpolation=cv2.INTER_AREA)
