@@ -40,6 +40,12 @@ class neat_algorithm:
 
 
 	def increase_max_steps(self):
+		"""
+		Increases the amount of steps the car can take.
+		By changing the varibles "INCREASE_MAX_STEP_EVERY_X_GENERATION"
+		and "INCREASE_MAX_STEP_BY_X", the increase_max_steps will automatically
+		be called and change the max_steps value.
+		"""
 		print("Max steps:", self.max_steps)
 		gen_num = self.reporter.get_gen()
 
