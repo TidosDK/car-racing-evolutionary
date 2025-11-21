@@ -23,7 +23,7 @@ def main():
         net = neat.nn.FeedForwardNetwork.create(genome, config)
 
         env = TinyGray(gym.make("CarRacing-v3", render_mode="human"))
-        obs, _ = env.reset(seed=42)
+        obs, _ = env.reset(seed=9)
 
         done = False
         steps = 0

@@ -18,12 +18,12 @@ WORKERS = None                     # None = use all CPU cores
 
 
 class neat_algorithm:
-	INCREASE_MAX_STEP_EVERY_X_GENERATION = 25  # How often it should increase the max step value
-	INCREASE_MAX_STEP_BY_X = 50                # How much it should increment the max step value by
+	INCREASE_MAX_STEP_EVERY_X_GENERATION = 1000  # How often it should increase the max step value
+	INCREASE_MAX_STEP_BY_X = 0                   # How much it should increment the max step value by
 
 
 	def __init__(self, shared_max_steps=None):
-		self.max_steps = 250
+		self.max_steps = 1350
 
 		if shared_max_steps is None:
 			self.shared_max_steps = self.max_steps
@@ -71,7 +71,7 @@ class neat_algorithm:
 		))
 
 		net = neat.nn.FeedForwardNetwork.create(genome, config)
-		obs, _ = env.reset(seed=None)
+		obs, _ = env.reset(seed=9)
 		total_reward  = 0.0
 
 		for _ in range(self.shared_max_steps):
