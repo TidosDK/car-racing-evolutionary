@@ -1,7 +1,7 @@
 #!/bin/sh
 
 python3 -m venv venv
-source venv/bin/activate
+. venv/bin/activate
 
 sudo apt update
 sudo apt install -y libgl1 -y
