@@ -6,6 +6,7 @@ import gymnasium as gym
 import numpy as np
 import os
 import pickle
+import configparser
 
 import neat
 from neat import Checkpointer, StatisticsReporter, StdOutReporter
@@ -15,7 +16,7 @@ import multiprocessing as mp
 
 NEAT_CONFIG_PATH = "car_neat.cfg"  # Config file for the neat-python implementation
 WORKERS = None                     # None = use all CPU cores
-
+GAME_SEED = 9                      # Seed for the car_racing map
 
 class neat_algorithm:
 	INCREASE_MAX_STEP_EVERY_X_GENERATION = 1000  # How often it should increase the max step value
@@ -71,7 +72,7 @@ class neat_algorithm:
 		))
 
 		net = neat.nn.FeedForwardNetwork.create(genome, config)
-		obs, _ = env.reset(seed=9)
+		obs, _ = env.reset(seed=GAME_SEED)
 		total_reward  = 0.0
 
 		for _ in range(self.shared_max_steps):
@@ -106,9 +107,15 @@ class neat_algorithm:
 							neat.DefaultSpeciesSet, neat.DefaultStagnation,
 							config_path)
 
+		parsed_config = configparser.ConfigParser()
+		parsed_config.read("car_neat.cfg")
+
 		pop = (neat.Checkpointer.restore_checkpoint(checkpoint)
 			if checkpoint else neat.Population(config))
 		pop.config = config
+
+		print("\nSeed for NEAT AI:\t", parsed_config["NEAT"]["seed"])
+		print("Seed for car_racing:\t", GAME_SEED)
 
 		pop.add_reporter(StdOutReporter(True))
 		stats = StatisticsReporter(); pop.add_reporter(stats)
