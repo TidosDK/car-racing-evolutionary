@@ -5,3 +5,4 @@ neat-python @ git+https://github.com/CodeReclaimers/neat-python.git@6dfe3de
 numpy==2.2.6
 pandas==2.3.3
 matplotlib==3.10.7
+tqdm==4.67.1

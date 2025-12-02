@@ -31,10 +31,10 @@ class TinyGray(gym.ObservationWrapper):
 
 class SavePerGenerationReporter(BaseReporter):
 	"""
-    Class object for saving the following information:
+	Class object for saving the following information:
 	- Champion of each generation (best driver).
 	- Best fitness, mean fitness, and worst fitness of each generation.
-    """
+	"""
 	def __init__(self, csv_path: str = "fitness_history.csv", champ_dir: str = "champions", max_steps: int = 1000):
 		self.csv_path  = pathlib.Path(csv_path)
 		self.champ_dir = pathlib.Path(champ_dir)
@@ -76,17 +76,33 @@ class SavePerGenerationReporter(BaseReporter):
 		gen     = self._gen
 		genomes = list(population.values())
 
-		vals = [g.fitness for g in genomes if g.fitness is not None]
-		if not vals:
+		def get_distance_score(g):
+			# The AI is Novelty:
+			if hasattr(g, "real_reward"):
+				return g.real_reward
+
+			# The AI is fitness-only:
+			if g.fitness is not None:
+				return g.fitness
+			return -float('inf')
+
+		vals = [get_distance_score(g) for g in genomes]
+
+		# Filter out invalid scores (in case of unevaluated genomes)
+		valid_vals = [v for v in vals if v > -float('inf')]
+
+		if not valid_vals:
 			print(f"[Gen {gen}] no valid fitness; nothing saved."); return
 
-		best, worst, mean = max(vals), min(vals), statistics.fmean(vals)
+		best, worst, mean = max(valid_vals), min(valid_vals), statistics.fmean(valid_vals)
+
 		with self.csv_path.open("a", newline="") as f:
 			csv.writer(f).writerow([gen, best, mean, worst, self.max_steps])
 
-		best_genome = max((g for g in genomes if g.fitness is not None),
-						  key=lambda g: g.fitness)
+		best_genome = max(genomes, key=get_distance_score)
+
 		champ_file  = self.champ_dir / f"gen-{gen:05d}.pkl"
 		with champ_file.open("wb") as f:
 			pickle.dump((best_genome, config), f)
+
 		print(f"[Gen {gen}] champion saved → {champ_file}")
