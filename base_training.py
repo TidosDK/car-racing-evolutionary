@@ -35,8 +35,9 @@ class SavePerGenerationReporter(BaseReporter):
 	- Champion of each generation (best driver).
 	- Best fitness, mean fitness, and worst fitness of each generation.
 	"""
-	def __init__(self, csv_path: str = "fitness_history.csv", champ_dir: str = "champions", max_steps: int = 1000):
+	def __init__(self, csv_path: str = "fitness_history.csv", champ_dir: str = "champions", archive_path: str = "archive_history.csv", max_steps: int = 1000):
 		self.csv_path  = pathlib.Path(csv_path)
+		self.archive_path = pathlib.Path(archive_path)
 		self.champ_dir = pathlib.Path(champ_dir)
 		self.champ_dir.mkdir(parents=True, exist_ok=True)
 		self.max_steps = max_steps
@@ -44,7 +45,18 @@ class SavePerGenerationReporter(BaseReporter):
 		if not self.csv_path.exists():
 			with self.csv_path.open("w", newline="") as f:
 				csv.writer(f).writerow(["generation", "best_fitness", "mean_fitness", "worst_fitness", "max_steps"])
+
+		with self.archive_path.open("w", newline="") as f:
+			csv.writer(f).writerow(["generation", "x", "y"])
+
 		self._gen = 0
+
+	def set_archive(self, archive_obj):
+		"""
+		Allows main.py to pass the NoveltyArchive object to this reporter.
+		"""
+		self.archive = archive_obj
+
 
 	def start_generation(self, generation):
 		"""
@@ -75,6 +87,12 @@ class SavePerGenerationReporter(BaseReporter):
 		"""
 		gen     = self._gen
 		genomes = list(population.values())
+
+		if self.archive is not None:
+			with self.archive_path.open("a", newline="") as f:
+				writer = csv.writer(f)
+				for point in self.archive.archive:
+					writer.writerow([gen, point[0], point[1]])
 
 		def get_distance_score(g):
 			# The AI is Novelty:
