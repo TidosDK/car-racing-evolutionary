@@ -1,0 +1,29 @@
+@startuml Training Flow
+
+participant "neat_algorithm" as na
+participant "neat-python" as np
+participant "CustomEvaluator" as evaluator
+
+-> na: train_or_resume(...)
+activate na
+
+na -> na: Load NEAT config
+
+na -> np: pop.run(..., n)
+activate np
+
+loop until n generations are trained
+	np -> evaluator: CustomEvaluator.evaluate(...)
+	activate evaluator
+
+	loop for each genome
+		evaluator -> na: eval_genome(...)
+		na --> evaluator: reward, archive
+		deactivate evaluator
+	end
+end
+
+np --> na: best_genome
+deactivate np
+
+@enduml
