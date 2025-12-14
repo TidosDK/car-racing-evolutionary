@@ -11,7 +11,6 @@ from tqdm import tqdm
 
 import neat
 from neat import Checkpointer, StatisticsReporter, StdOutReporter
-from neat.parallel import ParallelEvaluator
 
 import multiprocessing as mp
 
@@ -20,7 +19,9 @@ from novelty import NoveltyArchive
 NEAT_CONFIG_PATH = "car_neat.cfg"  # Config file for the neat-python implementation
 WORKERS = None                     # None = use all CPU cores
 GAME_SEED = 9                      # Seed for the car_racing map
+MAX_GENERATIONS = 1000             # The maximum amount of generations the algorithm will train
 DEBUG = False                      # Used for debugging
+
 
 class CustomEvaluator:
 	"""
@@ -80,7 +81,7 @@ class CustomEvaluator:
 		# Fitness-only:
 		else:
 			for i, (_, genome) in enumerate(genomes):
-				reward, behavior = results[i]
+				reward, _ = results[i]
 				genome.fitness = reward
 
 
@@ -184,8 +185,7 @@ class neat_algorithm:
 		parsed_config = configparser.ConfigParser()
 		parsed_config.read("car_neat.cfg")
 
-		pop = (neat.Checkpointer.restore_checkpoint(checkpoint)
-			if checkpoint else neat.Population(config))
+		pop = (neat.Checkpointer.restore_checkpoint(checkpoint) if checkpoint else neat.Population(config))
 		pop.config = config
 
 		print("\nSeed for NEAT AI:\t", parsed_config["NEAT"]["seed"])
@@ -231,13 +231,19 @@ if __name__ == "__main__":
 	parser.add_argument('--mode', type=str, default='fitness', choices=['fitness', 'novelty'], help='Evolution mode: "fitness" for standard rewards, "novelty" for behavior search')
 	args = parser.parse_args()
 
-	# Fresh run:
 	algorithm = neat_algorithm(shared_max_steps=shared_max)
+
+	# Fresh run:
 	algorithm.train_or_resume(
 		config_path=NEAT_CONFIG_PATH,
-		generations=1000,
+		generations=MAX_GENERATIONS,
 		mode=args.mode
 	)
 
 	# Resume a training from a checkpoint file:
-	# neat_algorithm.train_or_resume(NEAT_CONFIG_PATH, generations=1000, checkpoint="chk/car_neat-09", mode=args.mode)
+	# algorithm.train_or_resume(
+	# 	config_path=NEAT_CONFIG_PATH,
+	# 	generations=MAX_GENERATIONS,
+	# 	checkpoint="chk/car_neat-09",
+	# 	mode=args.mode
+	# )
