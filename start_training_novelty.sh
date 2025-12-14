@@ -9,6 +9,6 @@ sudo apt install -y swig build-essential python3-dev -y
 
 pip install -r requirements.txt
 
-python3 train_multiprocess.py
+python3 train_multiprocess.py --mode=novelty
 
 echo "Finished training"

@@ -5,18 +5,85 @@ import gymnasium as gym
 
 import numpy as np
 import os
-import pickle
 import configparser
+import argparse
+from tqdm import tqdm
 
 import neat
 from neat import Checkpointer, StatisticsReporter, StdOutReporter
-from neat.parallel import ParallelEvaluator
 
 import multiprocessing as mp
+
+from novelty import NoveltyArchive
 
 NEAT_CONFIG_PATH = "car_neat.cfg"  # Config file for the neat-python implementation
 WORKERS = None                     # None = use all CPU cores
 GAME_SEED = 9                      # Seed for the car_racing map
+MAX_GENERATIONS = 1000             # The maximum amount of generations the algorithm will train
+DEBUG = False                      # Used for debugging
+
+
+class CustomEvaluator:
+	"""
+	Custom evaluator based on the ParallelEvaluator from neat-python:
+	https://github.com/CodeReclaimers/neat-python/blob/master/neat/parallel.py#L48
+
+	It also uses multiprocessing for evaluating the algorithm.
+	"""
+	def __init__(self, num_workers, eval_function, mode="fitness", archive=None):
+		self.num_workers = num_workers
+		self.eval_function = eval_function
+		self.pool = mp.Pool(processes=num_workers)
+		self.mode = mode
+		self.archive = archive
+
+	def __del__(self):
+		"""
+		For cleaning up the multiprocessing pool when
+		the CustomEvaluator is destroyed.
+		"""
+		if self.pool:
+			self.pool.close()
+			self.pool.join()
+
+	def evaluate(self, genomes, config):
+		jobs = []
+		for _, genome in genomes:
+			# apply_async does not interrupt the main loop.
+			jobs.append(self.pool.apply_async(self.eval_function, (genome, config)))
+
+		results = []
+		for job in tqdm(jobs, desc=f"Evaluation -  mode: {self.mode}", leave=False, unit=" genome"):
+			results.append(job.get())
+
+		# Novelty:
+		if self.mode == "novelty":
+			population_behaviors = [res[1] for res in results]
+
+			for i, (_, genome) in enumerate(genomes):
+				reward, behavior = results[i]
+
+				novelty_score = self.archive.calculate_novelty(behavior, population_behaviors)
+
+				# It is necessary to use the novelty_score as the fitness value for
+				# the genome, in order for neat-python to train based on this value.
+				genome.fitness = novelty_score
+
+				genome.real_reward = reward
+
+				self.archive.update_archive(behavior, novelty_score)
+
+			print(f"Archive Size (count of unique locations): {self.archive.size()}")
+
+			# This print statement the Reporter from the neat-python prints information about the generation
+			print("THIS FITNESS IN THE FOLLOWING INFORMATION IS BASED ON THE NOVELTY CALCULATION:")
+
+		# Fitness-only:
+		else:
+			for i, (_, genome) in enumerate(genomes):
+				reward, _ = results[i]
+				genome.fitness = reward
+
 
 class neat_algorithm:
 	INCREASE_MAX_STEP_EVERY_X_GENERATION = 1000  # How often it should increase the max step value
@@ -34,8 +101,6 @@ class neat_algorithm:
 		self.generation_counter = 0
 		self.gen_mod_increaser = 0
 		self.last_increment = self.INCREASE_MAX_STEP_EVERY_X_GENERATION
-		self.reporter: SavePerGenerationReporter = None
-
 		self.reporter = SavePerGenerationReporter(max_steps=self.max_steps)
 		self.reporter.algorithm = self
 
@@ -75,6 +140,8 @@ class neat_algorithm:
 		obs, _ = env.reset(seed=GAME_SEED)
 		total_reward  = 0.0
 
+		final_x, final_y = 0.0, 0.0
+
 		for _ in range(self.shared_max_steps):
 			steer_raw, gas_raw, brake_raw = np.array(net.activate(obs), dtype=np.float32)
 
@@ -90,14 +157,22 @@ class neat_algorithm:
 
 			total_reward += reward
 
+			try:
+				final_x, final_y = env.unwrapped.car.hull.position
+			except:
+				if DEBUG:
+					print("DEBUG: Could not extract position of car")
+				pass
+
 			if terminated or truncated:
 				break
 
 		env.close()
-		return total_reward
+
+		return total_reward, [float(final_x), float(final_y)]
 
 
-	def train_or_resume(self, config_path: str, generations: int, checkpoint: str | None = None):
+	def train_or_resume(self, config_path: str, generations: int, checkpoint: str | None = None, mode="fitness"):
 		"""
 		Either trains or resumes from a checkpoint using ParallelEvaluator
 		from the neat-python implementation.
@@ -110,20 +185,32 @@ class neat_algorithm:
 		parsed_config = configparser.ConfigParser()
 		parsed_config.read("car_neat.cfg")
 
-		pop = (neat.Checkpointer.restore_checkpoint(checkpoint)
-			if checkpoint else neat.Population(config))
+		pop = (neat.Checkpointer.restore_checkpoint(checkpoint) if checkpoint else neat.Population(config))
 		pop.config = config
 
 		print("\nSeed for NEAT AI:\t", parsed_config["NEAT"]["seed"])
 		print("Seed for car_racing:\t", GAME_SEED)
+		print("Mode:\t\t\t", mode.lower())
 
 		pop.add_reporter(StdOutReporter(True))
-		stats = StatisticsReporter(); pop.add_reporter(stats)
+		stats = StatisticsReporter()
+		pop.add_reporter(stats)
 		pop.add_reporter(self.reporter)
 		os.makedirs("chk", exist_ok=True)
 		pop.add_reporter(Checkpointer(10, filename_prefix="chk/car_neat-"))
 
-		evaluator = ParallelEvaluator(WORKERS, self.eval_genome)
+		archive = None
+		if mode.lower() == "novelty":
+			archive = NoveltyArchive(threshold=5.0, k_neighbors=15)
+
+			self.reporter.set_archive(archive)
+
+		evaluator = CustomEvaluator(
+			num_workers=WORKERS,
+			eval_function=self.eval_genome,
+			mode=mode,
+			archive=archive
+		)
 
 		try:
 			winner = pop.run(evaluator.evaluate, generations)
@@ -131,8 +218,6 @@ class neat_algorithm:
 			print("\nInterrupted — saving best genome so far …")
 			winner = stats.best_genome()
 
-		with open("champion.pkl", "wb") as f:
-			pickle.dump((winner, config), f)
 		print("\nBest genome fitness:", winner.fitness)
 
 
@@ -142,9 +227,23 @@ if __name__ == "__main__":
 	manager = mp.Manager()
 	shared_max = manager.Value('i', 100)
 
-	# Fresh run:
+	parser = argparse.ArgumentParser(description='Run Car Racing Evolution')
+	parser.add_argument('--mode', type=str, default='fitness', choices=['fitness', 'novelty'], help='Evolution mode: "fitness" for standard rewards, "novelty" for behavior search')
+	args = parser.parse_args()
+
 	algorithm = neat_algorithm(shared_max_steps=shared_max)
-	algorithm.train_or_resume(config_path=NEAT_CONFIG_PATH, generations=1000)
+
+	# Fresh run:
+	algorithm.train_or_resume(
+		config_path=NEAT_CONFIG_PATH,
+		generations=MAX_GENERATIONS,
+		mode=args.mode
+	)
 
 	# Resume a training from a checkpoint file:
-	# neat_algorithm.train_or_resume(NEAT_CONFIG_PATH, generations=1000, checkpoint="chk/car_neat-09")
+	# algorithm.train_or_resume(
+	# 	config_path=NEAT_CONFIG_PATH,
+	# 	generations=MAX_GENERATIONS,
+	# 	checkpoint="chk/car_neat-09",
+	# 	mode=args.mode
+	# )

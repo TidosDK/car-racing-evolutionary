@@ -2,5 +2,5 @@
 
 rm champions/ -r
 rm chk/ -r
-rm champion.pkl
 rm fitness_history.csv
+rm archive_history.csv
