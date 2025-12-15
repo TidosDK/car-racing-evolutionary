@@ -203,7 +203,7 @@ class neat_algorithm:
 		if mode.lower() == "novelty":
 			archive = NoveltyArchive(threshold=5.0, k_neighbors=15)
 
-			self.reporter.set_archive(archive)
+		self.reporter.set_archive(archive)
 
 		evaluator = CustomEvaluator(
 			num_workers=WORKERS,
