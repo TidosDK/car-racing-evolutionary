@@ -4,8 +4,10 @@ from base_training import TinyGray
 
 import argparse
 
+SEED = 9
 
-def main():
+
+def main(seed_value: int):
     parser = argparse.ArgumentParser(
         description=(
             "Path to the pkl file containing champion"
@@ -23,7 +25,7 @@ def main():
         net = neat.nn.FeedForwardNetwork.create(genome, config)
 
         env = TinyGray(gym.make("CarRacing-v3", render_mode="human"))
-        obs, _ = env.reset(seed=9)
+        obs, _ = env.reset(seed=seed_value)
 
         done = False
         steps = 0
@@ -40,4 +42,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main(SEED)
