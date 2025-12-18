@@ -80,21 +80,21 @@ def plot_fitness(df: pd.DataFrame, *, output: Path | None = None) -> None:
         linewidth=2,
     )
 
-    if "max_steps" in df.columns:
-        plt.plot(
-            df["generation"],
-            df["max_steps"],
-            color="black",
-            linewidth=2,
-            label="Max steps",
-        )
+    # if "max_steps" in df.columns:
+    #     plt.plot(
+    #         df["generation"],
+    #         df["max_steps"],
+    #         color="black",
+    #         linewidth=2,
+    #         label="Max steps",
+    #     )
 
     plt.xlabel("Generation")
     plt.ylabel("Fitness / Steps")
 
     title = "Evolution of Fitness Metrics"
-    if "max_steps" in df.columns and df["max_steps"].nunique() == 1:
-        title += f"  (max_steps = {int(df['max_steps'].iloc[0])})"
+    # if "max_steps" in df.columns and df["max_steps"].nunique() == 1:
+    #     title += f"  (max_steps = {int(df['max_steps'].iloc[0])})"
     plt.title(title)
 
     plt.legend()
